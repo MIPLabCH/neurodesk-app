@@ -87,7 +87,7 @@ function createLaunchScript(
       `${
         isPodman
           ? '-v neurodesk-home:/home/jovyan --network bridge:ip=10.88.0.10,mac=88:75:56:ef:3e:d6'
-          : '--mount source=neurodesk-home,target=/home/jovyan --mac-address=88:75:56:ef:3e:d6'
+          : '--mount source=neurodesk-home,target=/home/jovyan --mac-address=88:75:56:ef:3e:d6 --env DISPLAY=$DISPLAY --volume="$HOME/.Xauthority:/root/.Xauthority:rw" -v /tmp/.X11-unix:/tmp/.X11-unix -v /home/NX421/NX_NSSP_public:/home/jovyan/Labs -v /home/NX421/Data:/home/jovyan/Data'
       }`
   ];
   launchArgs.push(
@@ -106,7 +106,7 @@ function createLaunchScript(
   }
 
   for (const arg of serverLaunchArgsFixed) {
-    launchArgs.push(arg.replace('{tag}', tag).replace('{tag}', tag));
+    launchArgs.push(arg.replace('{tag}', tag).replace('{tag}', tag).replace('vnmd/neurodesktop', 'shrecki/mipdock'));
     console.debug(`!!! ${strPort} launchArgs ${launchArgs}`);
   }
 
@@ -132,7 +132,7 @@ function createLaunchScript(
         setlocal enabledelayedexpansion
         SET ERRORCODE=0
         SET IMAGE_EXISTS=
-        FOR /F "usebackq delims=" %%i IN (\`${engineCmd} image inspect vnmd/neurodesktop:${tag} --format="exists" 2^>nul\`) DO SET IMAGE_EXISTS=%%i
+        FOR /F "usebackq delims=" %%i IN (\`${engineCmd} image inspect shrecki/mipdock:${tag} --format="exists" 2^>nul\`) DO SET IMAGE_EXISTS=%%i
         if "%IMAGE_EXISTS%"=="exists" (
             echo "Image exists"
             FOR /F "usebackq delims=" %%i IN (\`${engineCmd} container inspect -f "{{.State.Status}}" neurodeskapp-${strPort}\`) DO SET CONTAINER_STATUS=%%i
@@ -143,20 +143,20 @@ function createLaunchScript(
             echo "Image does not exist"
             ${stopCmd} 
             ${volumeCreate}            
-            ${engineCmd} pull docker.io/vnmd/neurodesktop:${tag}
+            ${engineCmd} pull docker.io/vnmd/mipdock:${tag}
             ${launchCmd}
         )
       `;
   } else {
     script = `
-        if [[ "$(${engineCmd} image inspect vnmd/neurodesktop:${tag} --format='exists' 2> /dev/null)" == "exists" ]]; then 
+        if [[ "$(${engineCmd} image inspect shrecki/mipdock:${tag} --format='exists' 2> /dev/null)" == "exists" ]]; then 
               ${stopCmd} 
               ${volumeCreate}
               ${launchCmd}
         else
           ${stopCmd} 
           ${volumeCreate}
-          ${engineCmd} pull docker.io/vnmd/neurodesktop:${tag}
+          ${engineCmd} pull docker.io/shrecki/mipdock:${tag}
           ${launchCmd}
         fi
         `;

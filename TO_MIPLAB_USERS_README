@@ -1,0 +1,36 @@
+This fork is meant to be used to deploy new neurodeskapp releases for the NX-421 class.
+There are some changes done in this regard:
+
+src/main/server.ts
+
+In launchArgs, there are additional docker arguments:
+--env DISPLAY=$DISPLAY --volume="$HOME/.Xauthority:/root/.Xauthority:rw"  -v /tmp/.X11-unix:/tmp/.X11-unix -v /home/NX421/NX_NSSP_public:/home/jovyan/Labs -v /home/NX421/Data:/home/jovyan/Data'
+
+These arguments are for the display, ie allowing an X11 forwarding through Docker to display FSLeyes in an interactive manner as well as other potential widgets in the future.
+The other arguments are there to mount the data folder and the code folder directly so that it is exposed to the students seamlessly.
+
+The other important modification in the launchArgs happens here: 
+    launchArgs.push(arg.replace('{tag}', tag).replace('{tag}', tag).replace('vnmd/neurodesktop', 'shrecki/mipdock'));
+
+Indeed, vnmd/neurodesktop is replaced with mipdock, which is a custom Docker image. You can find the Dockerfile to it in the root of this fork.
+The idea is that in this docker image (built on top of neurodesktop), we put all relevant libraries for the class: it is where we install our Python dependencies, such that students do not need to ever worry about environment management.
+
+To create a new neurodeskapp .deb to be deployed on the VM:
+
+# First update the mipdock docker image 
+# (Note to future TAs: you can create your own dockerhub repo, in which case shrecki/mipdock will need to be replaced accordingly)
+# (Likewise, should neurodeskapp get some updates, you should change in the dockerfile and everywhere the version tag corresponding to neurodesktop)
+
+docker system prune -a
+docker build -f Dockerfile -t neurodeskapp:2024-05-25 .
+docker tag neurodeskapp:2024-05-25 shrecki/mipdock:2024-05-25
+docker push shrecki/mipdock:2024-05-25
+
+# Then build the new .deb file, using yarn (if you do not have it, you must install it obviously)
+yarn
+yarn run clean && yarn build
+yarn dist:linux
+
+# Now you should see in the dist/ folder a NeurodeskApp.deb file. This is the one that should be sent to the VM group
+# (Probably Mme. Ionescu)
+# To install this file on the VM, a VM administrator should do on the main image sudo dpkg -i /path/to/NeurodeskApp.deb
